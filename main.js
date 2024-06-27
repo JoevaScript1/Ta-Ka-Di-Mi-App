@@ -11,7 +11,22 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('settings-form').addEventListener('submit', function (e) {
         e.preventDefault();
         generateRhythm();
+    // Get tempo slider and tempo value span
+    const tempoSlider = document.getElementById('tempo-slider');
+    const tempoValue = document.getElementById('tempo-value');
+
+    // Event listener for tempo slider change
+    tempoSlider.addEventListener('input', function () {
+        const tempo = parseInt(tempoSlider.value);
+        tempoValue.textContent = tempo + ' BPM';
+        updateTempo(tempo);
     });
+
+    // Function to update Tone.js Transport tempo
+    function updateTempo(tempo) {
+        Tone.Transport.bpm.value = tempo;
+    }
+});
 
     document.getElementById('playback-button').addEventListener('click', function () {
         Tone.start().then(() => {
@@ -62,14 +77,23 @@ function generateRhythm() {
 function countNotesInPattern(rhythmPattern) {
     let count = 0;
     for (const note of rhythmPattern) {
-        if (note.symbol !== '16r' && note.symbol !== '8r') {
+  
             count++;
         }
-    }
     return count;
 }
 
 function createRhythmPattern(beats) {
+    const noteDurations = {
+        'q': 1,
+        '8': 0.5,
+        '16': 0.25,
+        'qd': 1.5,
+        '8d': 0.75,
+        '8r': 0.5,
+        '16r': 0.25,
+    };
+
     const syllables = [
         { symbol: 'q', syllable: 'ta' },
         { symbol: '8', syllable: 'ta-Di' },
@@ -78,57 +102,105 @@ function createRhythmPattern(beats) {
         { symbol: '16r, 16', syllable: 'rest-Ka-Di-Mi' },
         { symbol: '16r, 16', syllable: 'rest-Rest-Di-Mi' },
         { symbol: '16r, 16', syllable: 'rest-Rest-Rest-Mi' },
-        { symbol: '16', syllable: 'ta-Rest-Di-Mi' },
-        { symbol: '8d, 16', syllable: 'ta-Mi' },
+        { symbol: '8, 16', syllable: 'ta-Rest-Di-Mi' },
+        { symbol: '8d, 16', syllable: 'ta-Rest-Rest-Mi' },
         { symbol: '16, 8', syllable: 'ta-Ka-Di-Rest' },
+        { symbol: '16, 8r', syllable: 'ta-Ka-Rest-Rest' },
     ];
 
     let pattern = [];
-    for (let i = 0; i < beats; i++) {
+    let totalDuration = 0;
+
+    while (totalDuration < beats) {
         const randomIndex = Math.floor(Math.random() * syllables.length);
         const chosenNote = syllables[randomIndex];
+        console.log(chosenNote)
+
+        let notePattern = [];
+        let noteDuration = 0;
+
         if (chosenNote.syllable === 'ta') {
-            pattern.push({ symbol: 'q', syllable: 'ta' });
+            notePattern = [{ symbol: 'q', syllable: 'Ta' }];
+            noteDuration = noteDurations['q'];
         } else if (chosenNote.syllable === 'rest-Di') {
-            pattern.push({ symbol: '8r', syllable: '' });
-            pattern.push({ symbol: '8', syllable: 'Di' });
+            notePattern = [{ symbol: '8r', syllable: '' }, { symbol: '8', syllable: 'Di' }];
+            noteDuration = noteDurations['8r'] + noteDurations['8'];
         } else if (chosenNote.syllable === 'ta-Di') {
-            pattern.push({ symbol: '8', syllable: 'ta' });
-            pattern.push({ symbol: '8', syllable: 'Di' });
+            notePattern = [{ symbol: '8', syllable: 'Ta' }, { symbol: '8', syllable: 'Di' }];
+            noteDuration = noteDurations['8'] + noteDurations['8'];
         } else if (chosenNote.syllable === 'ta-Ka-Di-Mi') {
-            pattern.push({ symbol: '16', syllable: 'ta' });
-            pattern.push({ symbol: '16', syllable: 'Ka' });
-            pattern.push({ symbol: '16', syllable: 'Di' });
-            pattern.push({ symbol: '16', syllable: 'Mi' });
+            notePattern = [
+                { symbol: '16', syllable: 'Ta' },
+                { symbol: '16', syllable: 'Ka' },
+                { symbol: '16', syllable: 'Di' },
+                { symbol: '16', syllable: 'Mi' }
+            ];
+            noteDuration = noteDurations['16'] * 4;
         } else if (chosenNote.syllable === 'rest-Ka-Di-Mi') {
-            pattern.push({ symbol: '16r', syllable: '' });
-            pattern.push({ symbol: '16', syllable: 'Ka' });
-            pattern.push({ symbol: '16', syllable: 'Di' });
-            pattern.push({ symbol: '16', syllable: 'Mi' });
+            notePattern = [
+                { symbol: '16r', syllable: '' },
+                { symbol: '16', syllable: 'Ka' },
+                { symbol: '16', syllable: 'Di' },
+                { symbol: '16', syllable: 'Mi' }
+            ];
+            noteDuration = noteDurations['16r'] + noteDurations['16'] * 3;
         } else if (chosenNote.syllable === 'rest-Rest-Di-Mi') {
-            pattern.push({ symbol: '8r', syllable: '' });
-            pattern.push({ symbol: '16', syllable: 'Di' });
-            pattern.push({ symbol: '16', syllable: 'Mi' });
+            notePattern = [
+                { symbol: '8r', syllable: '' },
+                { symbol: '16', syllable: 'Di' },
+                { symbol: '16', syllable: 'Mi' }
+            ];
+            noteDuration = noteDurations['8r'] + noteDurations['16'] * 2;
         } else if (chosenNote.syllable === 'rest-Rest-Rest-Mi') {
-            pattern.push({ symbol: '16r', syllable: '' });
-            pattern.push({ symbol: '16r', syllable: '' });
-            pattern.push({ symbol: '16r', syllable: '' });
-            pattern.push({ symbol: '16', syllable: 'Mi' });
+            notePattern = [
+                { symbol: '16r', syllable: '' },
+                { symbol: '16r', syllable: '' },
+                { symbol: '16r', syllable: '' },
+                { symbol: '16', syllable: 'Mi' }
+            ];
+            noteDuration = noteDurations['16r'] * 3 + noteDurations['16'];
         } else if (chosenNote.syllable === 'ta-Rest-Di-Mi') {
-            pattern.push({ symbol: '8', syllable: 'ta' });
-            pattern.push({ symbol: '16', syllable: 'Di' });
-            pattern.push({ symbol: '16', syllable: 'Mi' });
+            notePattern = [
+                { symbol: '8', syllable: 'Ta' },
+                { symbol: '16', syllable: 'Di' },
+                { symbol: '16', syllable: 'Mi' }
+            ];
+            noteDuration = noteDurations['8'] + noteDurations['16'] * 2;
         } else if (chosenNote.syllable === 'ta-Rest-Rest-Mi') {
-            pattern.push({ symbol: '8d', syllable: 'ta' });
-            pattern.push({ symbol: '16', syllable: 'Mi' });
-        } else if (chosenNote.syllable === 'ta-Ka-Di-Rest') {
-            pattern.push({ symbol: '16', syllable: 'ta' });
-            pattern.push({ symbol: '16', syllable: 'Ka' });
-            pattern.push({ symbol: '8', syllable: 'Di' });
+            notePattern = [
+                { symbol: '8d', syllable: 'Ta' },
+                { symbol: '16', syllable: 'Mi' }
+            ];
+            noteDuration = noteDurations['8d'] + noteDurations['16'] ;
+        } else if (chosenNote.syllable === 'ta-Ka-Rest-Rest') {
+            notePattern = [
+                { symbol: '16', syllable: 'Ta' },
+                { symbol: '16', syllable: 'Ka' },
+                { symbol: '8r', syllable: '' }
+            ];
+            noteDuration = noteDurations['8d'] + noteDurations['16'] ;
+        }
+
+        if (totalDuration + noteDuration <= beats) {
+            pattern = pattern.concat(notePattern);
+            totalDuration += noteDuration;
+        } else {
+            const remainingBeats = beats - totalDuration;
+            if (remainingBeats >= 1) {
+                pattern.push({ symbol: 'q', syllable: 'ta' });
+                totalDuration += 1;
+            } else if (remainingBeats >= 0.5) {
+                pattern.push({ symbol: '8', syllable: 'ta' });
+                totalDuration += 0.5;
+            } else if (remainingBeats >= 0.25) {
+                pattern.push({ symbol: '16', syllable: 'ta' });
+                totalDuration += 0.25;
+            }
         }
     }
     return pattern;
 }
+
 
 function renderRhythm(rhythmPattern, timeSignature) {
     const container = document.getElementById('rhythm-grid');
@@ -144,19 +216,17 @@ function renderRhythm(rhythmPattern, timeSignature) {
     rhythmPattern.forEach(note => {
         let duration = note.symbol;
 
-        if (duration === '8d') {
-            duration = '8';  // Use '8' for duration and add a dot separately
-        }
-
         const vexNote = new Vex.Flow.StaveNote({
             keys: ['c/4'],
             duration: duration
         });
-
-        if (note.symbol === '8d') {
-            vexNote.addDotToAll();
+        
+        if (duration === '8d') {
+            vexNote.addModifier(new Vex.Flow.Dot(), 0); // Add a dot to the note
         }
-
+        
+        
+        
         if (note.syllable) {
             const syllable = new Vex.Flow.Annotation(note.syllable)
                 .setVerticalJustification(Vex.Flow.Annotation.VerticalJustify.BOTTOM)
@@ -187,15 +257,13 @@ function playbackRhythm() {
         return;
     }
 
-    const rhythmSequence = [];
-
     const noteValueMap = {
         'q': { note: 'C4', duration: '4n' },
         '8': { note: 'C4', duration: '8n' },
         '16': { note: 'C4', duration: '16n' },
         '8r': { note: null, duration: '8n' },
         '16r': { note: null, duration: '16n' },
-        '8d': { note: 'C4', duration: '8n + 16n' }
+        '8d': { note: 'C4', duration: '8n.' } // Adjust the duration for the dotted eighth note
     };
 
     const rhythmDuration = rhythmPattern.reduce((acc, note) => {
@@ -222,6 +290,7 @@ function playbackRhythm() {
         stopPlayback();
     }, `+${rhythmDuration}`);
 }
+
 
 function stopPlayback() {
     if (metronomeIntervalId) {
