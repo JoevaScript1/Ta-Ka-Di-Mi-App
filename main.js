@@ -1,32 +1,23 @@
-const {
-    Renderer,
-    Stave,
-    StaveNote,
-    Accidental,
-    Formatter,
-    Dot
-} = Vex.Flow;
+const { Renderer, Stave, StaveNote, Accidental, Formatter, Dot } = Vex.Flow;
 
 document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('settings-form').addEventListener('submit', function (e) {
         e.preventDefault();
         generateRhythm();
-    // Get tempo slider and tempo value span
+    });
+
     const tempoSlider = document.getElementById('tempo-slider');
     const tempoValue = document.getElementById('tempo-value');
 
-    // Event listener for tempo slider change
     tempoSlider.addEventListener('input', function () {
         const tempo = parseInt(tempoSlider.value);
         tempoValue.textContent = tempo + ' BPM';
         updateTempo(tempo);
     });
 
-    // Function to update Tone.js Transport tempo
     function updateTempo(tempo) {
         Tone.Transport.bpm.value = tempo;
     }
-});
 
     document.getElementById('playback-button').addEventListener('click', function () {
         Tone.start().then(() => {
@@ -37,6 +28,10 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('stop-button').addEventListener('click', function () {
         stopPlaybacknow();
     });
+
+    // Initial render
+    generateRhythm();
+    window.addEventListener('resize', generateRhythm); // Re-render on window resize
 });
 
 let currentRhythmPattern = [];
@@ -77,9 +72,8 @@ function generateRhythm() {
 function countNotesInPattern(rhythmPattern) {
     let count = 0;
     for (const note of rhythmPattern) {
-  
-            count++;
-        }
+        count++;
+    }
     return count;
 }
 
@@ -114,7 +108,6 @@ function createRhythmPattern(beats) {
     while (totalDuration < beats) {
         const randomIndex = Math.floor(Math.random() * syllables.length);
         const chosenNote = syllables[randomIndex];
-        console.log(chosenNote)
 
         let notePattern = [];
         let noteDuration = 0;
@@ -171,14 +164,14 @@ function createRhythmPattern(beats) {
                 { symbol: '8d', syllable: 'Ta' },
                 { symbol: '16', syllable: 'Mi' }
             ];
-            noteDuration = noteDurations['8d'] + noteDurations['16'] ;
+            noteDuration = noteDurations['8d'] + noteDurations['16'];
         } else if (chosenNote.syllable === 'ta-Ka-Rest-Rest') {
             notePattern = [
                 { symbol: '16', syllable: 'Ta' },
                 { symbol: '16', syllable: 'Ka' },
                 { symbol: '8r', syllable: '' }
             ];
-            noteDuration = noteDurations['8d'] + noteDurations['16'] ;
+            noteDuration = noteDurations['8d'] + noteDurations['16'];
         }
 
         if (totalDuration + noteDuration <= beats) {
@@ -201,14 +194,16 @@ function createRhythmPattern(beats) {
     return pattern;
 }
 
-
 function renderRhythm(rhythmPattern, timeSignature) {
     const container = document.getElementById('rhythm-grid');
+    const width = container.clientWidth;
+    const height = 300;
+    
     const renderer = new Vex.Flow.Renderer(container, Vex.Flow.Renderer.Backends.SVG);
-    renderer.resize(800, 300);
+    renderer.resize(width, height);
 
     const context = renderer.getContext();
-    const stave = new Vex.Flow.Stave(10, 40, 780);
+    const stave = new Vex.Flow.Stave(10, 40, width - 20);
     stave.addClef('treble').addTimeSignature(timeSignature).setContext(context).draw();
 
     const vexNotes = [];
@@ -220,13 +215,11 @@ function renderRhythm(rhythmPattern, timeSignature) {
             keys: ['c/4'],
             duration: duration
         });
-        
+
         if (duration === '8d') {
             vexNote.addModifier(new Vex.Flow.Dot(), 0); // Add a dot to the note
         }
-        
-        
-        
+
         if (note.syllable) {
             const syllable = new Vex.Flow.Annotation(note.syllable)
                 .setVerticalJustification(Vex.Flow.Annotation.VerticalJustify.BOTTOM)
@@ -243,7 +236,7 @@ function renderRhythm(rhythmPattern, timeSignature) {
     const voice = new Vex.Flow.Voice({ num_beats, beat_value });
     voice.addTickables(vexNotes);
 
-    const formatter = new Vex.Flow.Formatter().joinVoices([voice]).format([voice], 700);
+    const formatter = new Vex.Flow.Formatter().joinVoices([voice]).format([voice], width - 100);
 
     voice.draw(context, stave);
     beams.forEach(beam => beam.setContext(context).draw());
@@ -290,7 +283,6 @@ function playbackRhythm() {
         stopPlayback();
     }, `+${rhythmDuration}`);
 }
-
 
 function stopPlayback() {
     if (metronomeIntervalId) {
